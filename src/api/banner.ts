@@ -67,6 +67,10 @@ export const bannerApi = {
     return api.get<any, BannerListResponse>('/banners', { params });
   },
 
+  getActiveBanners: () => {
+    return api.get<any, { code: number; message: string; data: Banner[] }>('/banners/active');
+  },
+
   getBannerById: (id: number) => {
     return api.get<any, BannerResponse>(`/banners/${id}`);
   },

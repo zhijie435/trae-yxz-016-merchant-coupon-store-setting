@@ -25,6 +25,23 @@ export const useBannerStore = defineStore('banner', () => {
     }
   };
 
+  const fetchActiveBanners = async () => {
+    loading.value = true;
+    try {
+      const response = await bannerApi.getActiveBanners();
+      if (response.code === 200) {
+        banners.value = response.data;
+      } else {
+        ElMessage.error(response.message || 'Failed to fetch active banners');
+      }
+    } catch (error) {
+      ElMessage.error('Failed to fetch active banners');
+      console.error(error);
+    } finally {
+      loading.value = false;
+    }
+  };
+
   const fetchBannerById = async (id: number) => {
     loading.value = true;
     try {
@@ -170,6 +187,7 @@ export const useBannerStore = defineStore('banner', () => {
     currentBanner,
     loading,
     fetchBanners,
+    fetchActiveBanners,
     fetchBannerById,
     createBanner,
     updateBanner,

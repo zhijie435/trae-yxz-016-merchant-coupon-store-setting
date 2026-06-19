@@ -192,6 +192,18 @@ export class BannerService {
     const stmt = db.prepare('SELECT * FROM banners WHERE status = ? ORDER BY create_time DESC');
     return stmt.all('pending') as Banner[];
   }
+
+  getActiveBanners(): Banner[] {
+    const now = new Date().toISOString();
+    const stmt = db.prepare(`
+      SELECT * FROM banners
+      WHERE status = 'active'
+        AND (start_time IS NULL OR start_time <= ?)
+        AND (end_time IS NULL OR end_time >= ?)
+      ORDER BY sort_order ASC, create_time DESC
+    `);
+    return stmt.all(now, now) as Banner[];
+  }
 }
 
 export default new BannerService();

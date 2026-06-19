@@ -232,6 +232,16 @@ app.get('/api/banners', async (req: Request, res: Response) => {
   }
 })
 
+app.get('/api/banners/active', async (req: Request, res: Response) => {
+  try {
+    const banners = bannerService.getActiveBanners()
+    res.json({ code: 200, message: 'success', data: banners })
+  } catch (error) {
+    console.error('Error getting active banners:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
 app.get('/api/banners/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id)
