@@ -136,6 +136,46 @@ export const useCouponStore = defineStore('coupon', () => {
     }
   };
 
+  const approveCoupon = async (id: number, comment?: string) => {
+    loading.value = true;
+    try {
+      const response = await couponApi.approveCoupon(id, { comment });
+      if (response.code === 200) {
+        ElMessage.success('Coupon approved successfully');
+        return true;
+      } else {
+        ElMessage.error(response.message || 'Failed to approve coupon');
+        return false;
+      }
+    } catch (error) {
+      ElMessage.error('Failed to approve coupon');
+      console.error(error);
+      return false;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const rejectCoupon = async (id: number, comment?: string) => {
+    loading.value = true;
+    try {
+      const response = await couponApi.rejectCoupon(id, { comment });
+      if (response.code === 200) {
+        ElMessage.success('Coupon rejected');
+        return true;
+      } else {
+        ElMessage.error(response.message || 'Failed to reject coupon');
+        return false;
+      }
+    } catch (error) {
+      ElMessage.error('Failed to reject coupon');
+      console.error(error);
+      return false;
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     coupons,
     currentCoupon,
@@ -147,5 +187,7 @@ export const useCouponStore = defineStore('coupon', () => {
     updateCoupon,
     deleteCoupon,
     deleteCoupons,
+    approveCoupon,
+    rejectCoupon,
   };
 });

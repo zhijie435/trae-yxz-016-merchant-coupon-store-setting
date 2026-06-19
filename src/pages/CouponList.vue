@@ -2,8 +2,8 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCouponStore } from '../stores/coupon';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Search, Delete, Edit, View } from '@element-plus/icons-vue';
+import { ElMessage, ElMessageBox, ElInput } from 'element-plus';
+import { Plus, Search, Delete, Edit, View, Check, Close } from '@element-plus/icons-vue';
 import type { Coupon } from '../api/coupon';
 
 const router = useRouter();
@@ -23,9 +23,10 @@ const statusOptions = [
 
 const statusMap = {
   draft: { label: 'Draft', color: '#909399' },
-  pending: { label: 'Pending', color: '#E6A23C' },
+  pending: { label: 'Pending Review', color: '#E6A23C' },
   active: { label: 'Active', color: '#67C23A' },
-  expired: { label: 'Expired', color: '#F56C6C' },
+  rejected: { label: 'Rejected', color: '#F56C6C' },
+  expired: { label: 'Expired', color: '#909399' },
 };
 
 const typeMap = {
@@ -117,6 +118,48 @@ const handleBatchDelete = async () => {
     const success = await couponStore.deleteCoupons(selectedCoupons.value);
     if (success) {
       selectedCoupons.value = [];
+      handleSearch();
+    }
+  } catch (error) {
+    // User cancelled
+  }
+};
+
+const handleApprove = async (id: number) => {
+  try {
+    const { value: comment } = await ElMessageBox.prompt(
+      'Please enter approval comment (optional)',
+      'Approve Coupon',
+      {
+        confirmButtonText: 'Approve',
+        cancelButtonText: 'Cancel',
+        inputPlaceholder: 'Enter comment (optional)',
+      }
+    );
+
+    const success = await couponStore.approveCoupon(id, comment);
+    if (success) {
+      handleSearch();
+    }
+  } catch (error) {
+    // User cancelled
+  }
+};
+
+const handleReject = async (id: number) => {
+  try {
+    const { value: comment } = await ElMessageBox.prompt(
+      'Please enter rejection reason (optional)',
+      'Reject Coupon',
+      {
+        confirmButtonText: 'Reject',
+        cancelButtonText: 'Cancel',
+        inputPlaceholder: 'Enter reason (optional)',
+      }
+    );
+
+    const success = await couponStore.rejectCoupon(id, comment);
+    if (success) {
       handleSearch();
     }
   } catch (error) {
@@ -226,10 +269,28 @@ onMounted(() => {
         </template>
       </el-table-column>
 
-      <el-table-column label="Actions" width="180" fixed="right">
+      <el-table-column label="Actions" width="280" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" :icon="Edit" @click="handleEdit(row.id!)">
             Edit
+          </el-button>
+          <el-button
+            v-if="row.status === 'pending'"
+            link
+            type="success"
+            :icon="Check"
+            @click="handleApprove(row.id!)"
+          >
+            Approve
+          </el-button>
+          <el-button
+            v-if="row.status === 'pending'"
+            link
+            type="danger"
+            :icon="Close"
+            @click="handleReject(row.id!)"
+          >
+            Reject
           </el-button>
           <el-button link type="danger" :icon="Delete" @click="handleDelete(row.id!)">
             Delete

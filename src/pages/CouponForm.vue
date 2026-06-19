@@ -24,7 +24,7 @@ const form = ref({
   per_user_limit: 1,
   start_time: '',
   end_time: '',
-  status: 'draft' as 'draft' | 'pending' | 'active' | 'expired',
+  status: 'pending' as 'draft' | 'pending' | 'active' | 'rejected' | 'expired',
   description: '',
 });
 
@@ -67,7 +67,11 @@ const handleSubmit = async () => {
         let success: boolean | number | null = false;
 
         if (isEdit.value && couponId.value) {
-          success = await couponStore.updateCoupon(couponId.value, form.value);
+          const submitData = { ...form.value };
+          if (submitData.status === 'active') {
+            submitData.status = 'pending';
+          }
+          success = await couponStore.updateCoupon(couponId.value, submitData);
         } else {
           success = await couponStore.createCoupon(form.value);
         }
@@ -201,21 +205,21 @@ onMounted(async () => {
           />
         </el-form-item>
 
-        <el-form-item label="Status" prop="status">
-          <el-select v-model="form.status" style="width: 200px">
-            <el-option label="Draft" value="draft" />
-            <el-option label="Pending" value="pending" />
-            <el-option label="Active" value="active" />
-            <el-option label="Expired" value="expired" />
-          </el-select>
-        </el-form-item>
-
         <el-form-item label="Description" prop="description">
           <el-input
             v-model="form.description"
             type="textarea"
             :rows="4"
             placeholder="Enter coupon description"
+          />
+        </el-form-item>
+
+        <el-form-item v-if="isEdit">
+          <el-alert
+            title="Note: This coupon will need to be reviewed again after editing"
+            type="warning"
+            :closable="false"
+            style="margin-bottom: 20px"
           />
         </el-form-item>
 

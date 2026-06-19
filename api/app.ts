@@ -94,7 +94,7 @@ app.post('/api/coupons', async (req: Request, res: Response) => {
       per_user_limit: couponData.per_user_limit || 1,
       start_time: couponData.start_time,
       end_time: couponData.end_time,
-      status: couponData.status || 'draft',
+      status: 'pending',
       description: couponData.description || '',
     })
 
@@ -153,6 +153,52 @@ app.delete('/api/coupons', async (req: Request, res: Response) => {
     res.json({ code: 200, message: `${deletedCount} coupon(s) deleted successfully`, data: null })
   } catch (error) {
     console.error('Error deleting coupons:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.post('/api/coupons/:id/approve', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id)
+    const { comment, reviewer_id } = req.body
+    const success = couponService.approveCoupon(id, { comment, reviewer_id })
+
+    if (!success) {
+      res.status(404).json({ code: 404, message: 'Coupon not found or not in pending status', data: null })
+      return
+    }
+
+    res.json({ code: 200, message: 'Coupon approved successfully', data: null })
+  } catch (error) {
+    console.error('Error approving coupon:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.post('/api/coupons/:id/reject', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id)
+    const { comment, reviewer_id } = req.body
+    const success = couponService.rejectCoupon(id, { comment, reviewer_id })
+
+    if (!success) {
+      res.status(404).json({ code: 404, message: 'Coupon not found or not in pending status', data: null })
+      return
+    }
+
+    res.json({ code: 200, message: 'Coupon rejected', data: null })
+  } catch (error) {
+    console.error('Error rejecting coupon:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.get('/api/coupons/status/pending', async (req: Request, res: Response) => {
+  try {
+    const coupons = couponService.getPendingCoupons()
+    res.json({ code: 200, message: 'success', data: coupons })
+  } catch (error) {
+    console.error('Error getting pending coupons:', error)
     res.status(500).json({ code: 500, message: 'Internal server error', data: null })
   }
 })

@@ -219,6 +219,105 @@ class CouponController {
       });
     }
   }
+
+  async approveCoupon(req: Request, res: Response): Promise<void> {
+    try {
+      const id = parseInt(req.params.id);
+
+      if (isNaN(id)) {
+        res.status(400).json({
+          code: 400,
+          message: 'Invalid coupon ID',
+          data: null,
+        });
+        return;
+      }
+
+      const { comment, reviewer_id } = req.body;
+      const success = couponService.approveCoupon(id, { comment, reviewer_id });
+
+      if (!success) {
+        res.status(404).json({
+          code: 404,
+          message: 'Coupon not found or not in pending status',
+          data: null,
+        });
+        return;
+      }
+
+      res.json({
+        code: 200,
+        message: 'Coupon approved successfully',
+        data: null,
+      });
+    } catch (error) {
+      console.error('Error approving coupon:', error);
+      res.status(500).json({
+        code: 500,
+        message: 'Internal server error',
+        data: null,
+      });
+    }
+  }
+
+  async rejectCoupon(req: Request, res: Response): Promise<void> {
+    try {
+      const id = parseInt(req.params.id);
+
+      if (isNaN(id)) {
+        res.status(400).json({
+          code: 400,
+          message: 'Invalid coupon ID',
+          data: null,
+        });
+        return;
+      }
+
+      const { comment, reviewer_id } = req.body;
+      const success = couponService.rejectCoupon(id, { comment, reviewer_id });
+
+      if (!success) {
+        res.status(404).json({
+          code: 404,
+          message: 'Coupon not found or not in pending status',
+          data: null,
+        });
+        return;
+      }
+
+      res.json({
+        code: 200,
+        message: 'Coupon rejected',
+        data: null,
+      });
+    } catch (error) {
+      console.error('Error rejecting coupon:', error);
+      res.status(500).json({
+        code: 500,
+        message: 'Internal server error',
+        data: null,
+      });
+    }
+  }
+
+  async getPendingCoupons(req: Request, res: Response): Promise<void> {
+    try {
+      const coupons = couponService.getPendingCoupons();
+
+      res.json({
+        code: 200,
+        message: 'success',
+        data: coupons,
+      });
+    } catch (error) {
+      console.error('Error getting pending coupons:', error);
+      res.status(500).json({
+        code: 500,
+        message: 'Internal server error',
+        data: null,
+      });
+    }
+  }
 }
 
 export default new CouponController();

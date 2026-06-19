@@ -12,10 +12,18 @@ export interface Coupon {
   per_user_limit?: number;
   start_time: string;
   end_time: string;
-  status: 'draft' | 'pending' | 'active' | 'expired';
+  status: 'draft' | 'pending' | 'active' | 'rejected' | 'expired';
   description?: string;
+  review_comment?: string;
+  review_time?: string;
+  reviewer_id?: number;
   create_time?: string;
   update_time?: string;
+}
+
+export interface ReviewParams {
+  comment?: string;
+  reviewer_id?: number;
 }
 
 export interface CouponListParams {
@@ -144,6 +152,41 @@ export class CouponService {
     const stmt = db.prepare(`DELETE FROM coupons WHERE id IN (${placeholders})`);
     const result = stmt.run(...ids);
     return result.changes;
+  }
+
+  approveCoupon(id: number, params: ReviewParams): boolean {
+    const stmt = db.prepare(`
+      UPDATE coupons 
+      SET status = 'active', 
+          review_comment = ?, 
+          review_time = CURRENT_TIMESTAMP, 
+          reviewer_id = ?,
+          update_time = CURRENT_TIMESTAMP
+      WHERE id = ? AND status = 'pending'
+    `);
+    
+    const result = stmt.run(params.comment || '', params.reviewer_id || null, id);
+    return result.changes > 0;
+  }
+
+  rejectCoupon(id: number, params: ReviewParams): boolean {
+    const stmt = db.prepare(`
+      UPDATE coupons 
+      SET status = 'rejected', 
+          review_comment = ?, 
+          review_time = CURRENT_TIMESTAMP, 
+          reviewer_id = ?,
+          update_time = CURRENT_TIMESTAMP
+      WHERE id = ? AND status = 'pending'
+    `);
+    
+    const result = stmt.run(params.comment || '', params.reviewer_id || null, id);
+    return result.changes > 0;
+  }
+
+  getPendingCoupons(): Coupon[] {
+    const stmt = db.prepare('SELECT * FROM coupons WHERE status = ? ORDER BY create_time DESC');
+    return stmt.all('pending') as Coupon[];
   }
 }
 

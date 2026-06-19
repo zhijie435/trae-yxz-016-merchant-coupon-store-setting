@@ -25,8 +25,11 @@ export interface Coupon {
   per_user_limit?: number;
   start_time: string;
   end_time: string;
-  status: 'draft' | 'pending' | 'active' | 'expired';
+  status: 'draft' | 'pending' | 'active' | 'rejected' | 'expired';
   description?: string;
+  review_comment?: string;
+  review_time?: string;
+  reviewer_id?: number;
   create_time?: string;
   update_time?: string;
 }
@@ -86,6 +89,18 @@ export const couponApi = {
 
   deleteCoupons: (ids: number[]) => {
     return api.delete<any, any>('/coupons', { data: { ids } });
+  },
+
+  approveCoupon: (id: number, data?: { comment?: string; reviewer_id?: number }) => {
+    return api.post<any, any>(`/coupons/${id}/approve`, data || {});
+  },
+
+  rejectCoupon: (id: number, data?: { comment?: string; reviewer_id?: number }) => {
+    return api.post<any, any>(`/coupons/${id}/reject`, data || {});
+  },
+
+  getPendingCoupons: () => {
+    return api.get<any, { code: number; message: string; data: Coupon[] }>('/coupons/status/pending');
   },
 };
 

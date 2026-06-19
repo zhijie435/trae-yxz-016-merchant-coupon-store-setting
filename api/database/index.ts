@@ -24,8 +24,11 @@ export function initializeDatabase() {
       per_user_limit INTEGER DEFAULT 1,
       start_time DATETIME NOT NULL,
       end_time DATETIME NOT NULL,
-      status VARCHAR(20) NOT NULL DEFAULT 'draft',
+      status VARCHAR(20) NOT NULL DEFAULT 'pending',
       description TEXT,
+      review_comment VARCHAR(500) DEFAULT NULL,
+      review_time DATETIME DEFAULT NULL,
+      reviewer_id INTEGER DEFAULT NULL,
       create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
       update_time DATETIME DEFAULT CURRENT_TIMESTAMP
     )
@@ -33,6 +36,45 @@ export function initializeDatabase() {
 
   db.exec('CREATE INDEX IF NOT EXISTS idx_coupons_status ON coupons(status)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_coupons_end_time ON coupons(end_time)');
+
+  const couponColumns = db.prepare('PRAGMA table_info(coupons)').all() as any[];
+  if (!couponColumns.some(col => col.name === 'review_comment')) {
+    try {
+      db.exec('ALTER TABLE coupons ADD COLUMN review_comment VARCHAR(500) DEFAULT NULL');
+      console.log('Added review_comment column to coupons table');
+    } catch (error) {
+      console.error('Error adding review_comment column:', error);
+    }
+  }
+
+  if (!couponColumns.some(col => col.name === 'review_time')) {
+    try {
+      db.exec('ALTER TABLE coupons ADD COLUMN review_time DATETIME DEFAULT NULL');
+      console.log('Added review_time column to coupons table');
+    } catch (error) {
+      console.error('Error adding review_time column:', error);
+    }
+  }
+
+  if (!couponColumns.some(col => col.name === 'reviewer_id')) {
+    try {
+      db.exec('ALTER TABLE coupons ADD COLUMN reviewer_id INTEGER DEFAULT NULL');
+      console.log('Added reviewer_id column to coupons table');
+    } catch (error) {
+      console.error('Error adding reviewer_id column:', error);
+    }
+  }
+
+  const couponStatusDefault = db.prepare("PRAGMA table_info(coupons)").all() as any[];
+  const statusColumn = couponStatusDefault.find(col => col.name === 'status');
+  if (statusColumn && statusColumn.dflt_value === "'draft'") {
+    try {
+      db.exec('ALTER TABLE coupons ALTER COLUMN status VARCHAR(20) NOT NULL DEFAULT "pending"');
+      console.log('Updated status default value to pending');
+    } catch (error) {
+      console.error('Error updating status default value:', error);
+    }
+  }
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS banners (
