@@ -14,6 +14,7 @@ import { fileURLToPath } from 'url'
 import { initializeDatabase } from './database/index.js'
 import couponService from './services/couponService.js'
 import bannerService from './services/bannerService.js'
+import announcementService from './services/announcementService.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -274,6 +275,144 @@ app.post('/api/banners/sort', async (req: Request, res: Response) => {
     res.json({ code: 200, message: 'Sort orders updated successfully', data: null })
   } catch (error) {
     console.error('Error updating sort orders:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+// Announcement APIs
+app.get('/api/announcements', async (req: Request, res: Response) => {
+  try {
+    const store_id = parseInt(req.query.store_id as string) || 1
+    const status = req.query.status as string || ''
+    const type = req.query.type as string || ''
+
+    const result = announcementService.getAnnouncementList({ store_id, status, type })
+
+    res.json({
+      code: 200,
+      message: 'success',
+      data: result,
+    })
+  } catch (error) {
+    console.error('Error getting announcement list:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.get('/api/announcements/active', async (req: Request, res: Response) => {
+  try {
+    const announcements = announcementService.getActiveAnnouncements()
+
+    res.json({
+      code: 200,
+      message: 'success',
+      data: announcements,
+    })
+  } catch (error) {
+    console.error('Error getting active announcements:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.get('/api/announcements/:id', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id)
+    const announcement = announcementService.getAnnouncementById(id)
+
+    if (!announcement) {
+      res.status(404).json({ code: 404, message: 'Announcement not found', data: null })
+      return
+    }
+
+    res.json({ code: 200, message: 'success', data: announcement })
+  } catch (error) {
+    console.error('Error getting announcement:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.post('/api/announcements', async (req: Request, res: Response) => {
+  try {
+    const announcementData = req.body
+
+    if (!announcementData.title || !announcementData.content) {
+      res.status(400).json({ code: 400, message: 'Title and content are required', data: null })
+      return
+    }
+
+    const id = announcementService.createAnnouncement({
+      store_id: announcementData.store_id || 1,
+      title: announcementData.title,
+      content: announcementData.content,
+      type: announcementData.type || 'popup',
+      status: 'pending',
+      priority: announcementData.priority || 0,
+      start_time: announcementData.start_time,
+      end_time: announcementData.end_time,
+    })
+
+    res.json({ code: 200, message: 'Announcement created successfully, waiting for review', data: { id } })
+  } catch (error) {
+    console.error('Error creating announcement:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.put('/api/announcements/:id', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id)
+    const updates = req.body
+    const success = announcementService.updateAnnouncement(id, updates)
+
+    if (!success) {
+      res.status(404).json({ code: 404, message: 'Announcement not found or no changes made', data: null })
+      return
+    }
+
+    res.json({ code: 200, message: 'Announcement updated successfully', data: null })
+  } catch (error) {
+    console.error('Error updating announcement:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.post('/api/announcements/:id/review', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id)
+    const { status, reviewer_id, comment } = req.body
+
+    if (!status || !['approved', 'rejected'].includes(status)) {
+      res.status(400).json({ code: 400, message: 'Invalid review status', data: null })
+      return
+    }
+
+    const success = announcementService.reviewAnnouncement(id, status, reviewer_id || 1, comment)
+
+    if (!success) {
+      res.status(404).json({ code: 404, message: 'Announcement not found', data: null })
+      return
+    }
+
+    res.json({ code: 200, message: `Announcement ${status === 'approved' ? 'approved' : 'rejected'} successfully`, data: null })
+  } catch (error) {
+    console.error('Error reviewing announcement:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.delete('/api/announcements/:id', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id)
+    const success = announcementService.deleteAnnouncement(id)
+
+    if (!success) {
+      res.status(404).json({ code: 404, message: 'Announcement not found', data: null })
+      return
+    }
+
+    res.json({ code: 200, message: 'Announcement deleted successfully', data: null })
+  } catch (error) {
+    console.error('Error deleting announcement:', error)
     res.status(500).json({ code: 500, message: 'Internal server error', data: null })
   }
 })

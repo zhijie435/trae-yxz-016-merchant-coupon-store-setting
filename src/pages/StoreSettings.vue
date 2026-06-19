@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { Ticket, Picture, Setting } from '@element-plus/icons-vue';
+import { Ticket, Picture, Bell, Setting } from '@element-plus/icons-vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -12,8 +12,9 @@ const handleMenuSelect = (path: string) => {
 };
 
 const menuItems = [
-  { path: '/coupons', label: 'Coupon Management', icon: Ticket },
-  { path: '/banners', label: 'Banner Management', icon: Picture },
+  { path: '/settings/coupons', label: 'Coupon Management', icon: Ticket },
+  { path: '/settings/banners', label: 'Banner Management', icon: Picture },
+  { path: '/settings/announcements', label: 'Announcement Management', icon: Bell },
   { path: '/settings', label: 'Store Settings', icon: Setting },
 ];
 </script>

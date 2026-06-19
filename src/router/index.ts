@@ -4,6 +4,7 @@ import CouponList from '@/pages/CouponList.vue'
 import CouponForm from '@/pages/CouponForm.vue'
 import StoreSettings from '@/pages/StoreSettings.vue'
 import BannerManagement from '@/pages/BannerManagement.vue'
+import AnnouncementManagement from '@/pages/AnnouncementManagement.vue'
 
 const routes = [
   {
@@ -38,6 +39,11 @@ const routes = [
         path: 'banners',
         name: 'banner-management',
         component: BannerManagement,
+      },
+      {
+        path: 'announcements',
+        name: 'announcement-management',
+        component: AnnouncementManagement,
       },
     ],
   },

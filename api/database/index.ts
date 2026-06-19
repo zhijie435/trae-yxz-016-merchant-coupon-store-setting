@@ -54,6 +54,29 @@ export function initializeDatabase() {
   db.exec('CREATE INDEX IF NOT EXISTS idx_banners_store_id ON banners(store_id)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_banners_status ON banners(status)');
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS announcements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      store_id INTEGER DEFAULT 1,
+      title VARCHAR(200) NOT NULL,
+      content TEXT NOT NULL,
+      type VARCHAR(20) NOT NULL DEFAULT 'popup',
+      status VARCHAR(20) NOT NULL DEFAULT 'pending',
+      priority INTEGER DEFAULT 0,
+      start_time DATETIME DEFAULT NULL,
+      end_time DATETIME DEFAULT NULL,
+      review_comment VARCHAR(500) DEFAULT NULL,
+      review_time DATETIME DEFAULT NULL,
+      reviewer_id INTEGER DEFAULT NULL,
+      create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+      update_time DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.exec('CREATE INDEX IF NOT EXISTS idx_announcements_store_id ON announcements(store_id)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_announcements_status ON announcements(status)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_announcements_start_time ON announcements(start_time)');
+
   console.log('Database initialized successfully');
 }
 
