@@ -23,6 +23,9 @@ export interface Announcement {
   priority?: number;
   start_time?: string;
   end_time?: string;
+  image_url?: string;
+  button_text?: string;
+  button_link?: string;
   review_comment?: string;
   review_time?: string;
   reviewer_id?: number;

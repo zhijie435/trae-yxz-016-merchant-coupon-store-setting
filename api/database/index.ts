@@ -148,6 +148,9 @@ export function initializeDatabase() {
       priority INTEGER DEFAULT 0,
       start_time DATETIME DEFAULT NULL,
       end_time DATETIME DEFAULT NULL,
+      image_url VARCHAR(500) DEFAULT NULL,
+      button_text VARCHAR(50) DEFAULT NULL,
+      button_link VARCHAR(500) DEFAULT NULL,
       review_comment VARCHAR(500) DEFAULT NULL,
       review_time DATETIME DEFAULT NULL,
       reviewer_id INTEGER DEFAULT NULL,
@@ -159,6 +162,34 @@ export function initializeDatabase() {
   db.exec('CREATE INDEX IF NOT EXISTS idx_announcements_store_id ON announcements(store_id)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_announcements_status ON announcements(status)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_announcements_start_time ON announcements(start_time)');
+
+  const announcementColumns = db.prepare('PRAGMA table_info(announcements)').all() as any[];
+  if (!announcementColumns.some(col => col.name === 'image_url')) {
+    try {
+      db.exec('ALTER TABLE announcements ADD COLUMN image_url VARCHAR(500) DEFAULT NULL');
+      console.log('Added image_url column to announcements table');
+    } catch (error) {
+      console.error('Error adding image_url column:', error);
+    }
+  }
+
+  if (!announcementColumns.some(col => col.name === 'button_text')) {
+    try {
+      db.exec('ALTER TABLE announcements ADD COLUMN button_text VARCHAR(50) DEFAULT NULL');
+      console.log('Added button_text column to announcements table');
+    } catch (error) {
+      console.error('Error adding button_text column:', error);
+    }
+  }
+
+  if (!announcementColumns.some(col => col.name === 'button_link')) {
+    try {
+      db.exec('ALTER TABLE announcements ADD COLUMN button_link VARCHAR(500) DEFAULT NULL');
+      console.log('Added button_link column to announcements table');
+    } catch (error) {
+      console.error('Error adding button_link column:', error);
+    }
+  }
 
   console.log('Database initialized successfully');
 }

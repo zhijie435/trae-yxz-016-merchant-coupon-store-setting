@@ -10,6 +10,9 @@ export interface Announcement {
   priority?: number;
   start_time?: string;
   end_time?: string;
+  image_url?: string;
+  button_text?: string;
+  button_link?: string;
   review_comment?: string;
   review_time?: string;
   reviewer_id?: number;
@@ -88,8 +91,9 @@ export class AnnouncementService {
   createAnnouncement(announcement: Omit<Announcement, 'id' | 'create_time' | 'update_time'>): number {
     const stmt = db.prepare(`
       INSERT INTO announcements (
-        store_id, title, content, type, status, priority, start_time, end_time
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        store_id, title, content, type, status, priority, start_time, end_time,
+        image_url, button_text, button_link
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
@@ -100,7 +104,10 @@ export class AnnouncementService {
       announcement.status || 'pending',
       announcement.priority || 0,
       announcement.start_time || null,
-      announcement.end_time || null
+      announcement.end_time || null,
+      announcement.image_url || null,
+      announcement.button_text || null,
+      announcement.button_link || null
     );
 
     return result.lastInsertRowid as number;
@@ -109,7 +116,7 @@ export class AnnouncementService {
   updateAnnouncement(id: number, updates: Partial<Announcement>): boolean {
     const allowedFields = [
       'title', 'content', 'type', 'status', 'priority', 'start_time', 'end_time',
-      'review_comment', 'review_time', 'reviewer_id'
+      'review_comment', 'review_time', 'reviewer_id', 'image_url', 'button_text', 'button_link'
     ];
 
     const updateFields: string[] = [];

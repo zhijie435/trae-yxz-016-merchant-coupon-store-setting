@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { ElDialog, ElTag } from 'element-plus';
+import { ElDialog, ElTag, ElImage, ElButton } from 'element-plus';
 import type { Announcement } from '../api/announcement';
 
 const props = defineProps<{
@@ -20,6 +20,12 @@ const dialogVisible = computed({
 
 const handleClose = () => {
   emit('close');
+};
+
+const handleButtonClick = () => {
+  if (props.announcement?.button_link) {
+    window.open(props.announcement.button_link, '_blank');
+  }
 };
 
 const statusMap = {
@@ -68,8 +74,20 @@ const formatDate = (dateString: string | undefined) => {
 
       <div class="detail-body">
         <h2>{{ announcement.title }}</h2>
+        <div v-if="announcement.image_url" class="announcement-image">
+          <el-image
+            :src="announcement.image_url"
+            fit="cover"
+            style="width: 100%; max-height: 300px; border-radius: 8px;"
+          />
+        </div>
         <div class="content">
           {{ announcement.content }}
+        </div>
+        <div v-if="announcement.button_text && announcement.button_link" class="action-button">
+          <el-button type="primary" size="large" @click="handleButtonClick">
+            {{ announcement.button_text }}
+          </el-button>
         </div>
       </div>
 
@@ -143,6 +161,15 @@ const formatDate = (dateString: string | undefined) => {
   font-size: 20px;
   font-weight: 600;
   color: #303133;
+}
+
+.announcement-image {
+  margin-bottom: 16px;
+}
+
+.action-button {
+  margin-top: 16px;
+  text-align: center;
 }
 
 .content {

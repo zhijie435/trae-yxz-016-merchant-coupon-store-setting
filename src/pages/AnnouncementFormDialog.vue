@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
 import { useAnnouncementStore } from '../stores/announcement';
-import { ElDialog, ElForm, ElFormItem, ElInput, ElSelect, ElOption, ElButton, ElDatePicker } from 'element-plus';
-import { Bell } from '@element-plus/icons-vue';
+import { ElDialog, ElForm, ElFormItem, ElInput, ElSelect, ElOption, ElButton, ElDatePicker, ElUpload, ElImage } from 'element-plus';
+import { Bell, Upload } from '@element-plus/icons-vue';
 import type { FormInstance, FormRules } from 'element-plus';
 import type { Announcement } from '../api/announcement';
 
@@ -26,6 +26,9 @@ const form = ref({
   priority: 0,
   start_time: '',
   end_time: '',
+  image_url: '',
+  button_text: '',
+  button_link: '',
 });
 
 const rules: FormRules = {
@@ -57,6 +60,9 @@ watch(
         priority: props.announcement.priority || 0,
         start_time: props.announcement.start_time || '',
         end_time: props.announcement.end_time || '',
+        image_url: props.announcement.image_url || '',
+        button_text: props.announcement.button_text || '',
+        button_link: props.announcement.button_link || '',
       };
     } else if (newVal) {
       form.value = {
@@ -66,6 +72,9 @@ watch(
         priority: 0,
         start_time: '',
         end_time: '',
+        image_url: '',
+        button_text: '',
+        button_link: '',
       };
     }
   }
@@ -104,6 +113,34 @@ const typeOptions = [
   { label: 'Banner', value: 'banner', description: 'Shows as a banner at the top of the page' },
   { label: 'Notice Bar', value: 'notice', description: 'Shows as a scrolling notice' },
 ];
+
+const sampleImages = [
+  'https://picsum.photos/800/400?random=10',
+  'https://picsum.photos/800/400?random=11',
+  'https://picsum.photos/800/400?random=12',
+  'https://picsum.photos/800/400?random=13',
+  'https://picsum.photos/800/400?random=14',
+];
+
+const handleUploadSuccess = (response: any, file: any) => {
+  if (response.code === 200 && response.data?.url) {
+    form.value.image_url = response.data.url;
+  } else {
+    form.value.image_url = URL.createObjectURL(file.raw);
+  }
+};
+
+const handleUploadError = (error: Error) => {
+  console.error('Upload error:', error);
+};
+
+const handleRemoveImage = () => {
+  form.value.image_url = '';
+};
+
+const useSampleImage = (url: string) => {
+  form.value.image_url = url;
+};
 </script>
 
 <template>
@@ -162,6 +199,77 @@ const typeOptions = [
         />
       </el-form-item>
 
+      <el-form-item label="Popup Image" prop="image_url">
+        <div class="image-upload-container">
+          <div v-if="form.image_url" class="image-preview">
+            <el-image
+              :src="form.image_url"
+              fit="cover"
+              style="width: 100%; height: 150px; border-radius: 4px;"
+            />
+            <el-button
+              type="danger"
+              size="small"
+              class="remove-btn"
+              @click="handleRemoveImage"
+            >
+              Remove
+            </el-button>
+          </div>
+
+          <div v-else class="upload-placeholder">
+            <el-upload
+              class="upload-demo"
+              :show-file-list="false"
+              :on-success="handleUploadSuccess"
+              :on-error="handleUploadError"
+              action="#"
+              :auto-upload="false"
+              :http-request="(options: any) => {
+                const file = options.file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                  form.image_url = e.target?.result as string;
+                };
+                reader.readAsDataURL(file);
+              }"
+            >
+              <el-button type="primary" :icon="Upload">Upload Image</el-button>
+            </el-upload>
+
+            <div class="sample-images">
+              <p>Or choose a sample:</p>
+              <div class="sample-grid">
+                <div
+                  v-for="(url, idx) in sampleImages"
+                  :key="idx"
+                  class="sample-item"
+                  @click="useSampleImage(url)"
+                >
+                  <el-image :src="url" fit="cover" style="width: 80px; height: 40px" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </el-form-item>
+
+      <el-form-item label="Button Text" prop="button_text">
+        <el-input
+          v-model="form.button_text"
+          placeholder="e.g., Learn More, View Details"
+          maxlength="50"
+          show-word-limit
+        />
+      </el-form-item>
+
+      <el-form-item label="Button Link" prop="button_link">
+        <el-input
+          v-model="form.button_link"
+          placeholder="e.g., https://example.com/page"
+        />
+      </el-form-item>
+
       <el-form-item label="Priority" prop="priority">
         <el-input
           v-model.number="form.priority"
@@ -206,5 +314,54 @@ const typeOptions = [
 :deep(.el-select-dropdown__item) {
   height: auto;
   padding: 10px;
+}
+
+.image-upload-container {
+  width: 100%;
+}
+
+.image-preview {
+  position: relative;
+  width: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.upload-placeholder {
+  width: 100%;
+}
+
+.sample-images {
+  margin-top: 16px;
+}
+
+.sample-images p {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #909399;
+}
+
+.sample-grid {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sample-item {
+  cursor: pointer;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  transition: border-color 0.3s;
+}
+
+.sample-item:hover {
+  border-color: #409eff;
 }
 </style>

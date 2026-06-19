@@ -442,6 +442,9 @@ app.post('/api/announcements', async (req: Request, res: Response) => {
       priority: announcementData.priority || 0,
       start_time: announcementData.start_time,
       end_time: announcementData.end_time,
+      image_url: announcementData.image_url,
+      button_text: announcementData.button_text,
+      button_link: announcementData.button_link,
     })
 
     res.json({ code: 200, message: 'Announcement created successfully, waiting for review', data: { id } })
