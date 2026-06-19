@@ -1,0 +1,173 @@
+/**
+ * This is a API server
+ */
+
+import express, {
+  type Request,
+  type Response,
+  type NextFunction,
+} from 'express'
+import cors from 'cors'
+import path from 'path'
+import dotenv from 'dotenv'
+import { fileURLToPath } from 'url'
+import { initializeDatabase } from './database/index.js'
+import couponService from './services/couponService.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+dotenv.config()
+
+initializeDatabase()
+
+const app: express.Application = express()
+
+app.use(cors())
+app.use(express.json({ limit: '10mb' }))
+app.use(express.urlencoded({ extended: true, limit: '10mb' }))
+
+app.get('/api/health', (req: Request, res: Response) => {
+  res.json({ success: true, message: 'ok' })
+})
+
+app.get('/api/coupons', async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1
+    const pageSize = parseInt(req.query.pageSize as string) || 10
+    const keyword = req.query.keyword as string || ''
+    const status = req.query.status as string || ''
+
+    const result = couponService.getCouponList({ page, pageSize, keyword, status })
+
+    res.json({
+      code: 200,
+      message: 'success',
+      data: result,
+    })
+  } catch (error) {
+    console.error('Error getting coupon list:', error)
+    res.status(500).json({
+      code: 500,
+      message: 'Internal server error',
+      data: null,
+    })
+  }
+})
+
+app.get('/api/coupons/:id', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id)
+    const coupon = couponService.getCouponById(id)
+
+    if (!coupon) {
+      res.status(404).json({ code: 404, message: 'Coupon not found', data: null })
+      return
+    }
+
+    res.json({ code: 200, message: 'success', data: coupon })
+  } catch (error) {
+    console.error('Error getting coupon:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.post('/api/coupons', async (req: Request, res: Response) => {
+  try {
+    const couponData = req.body
+
+    if (!couponData.name || !couponData.value || !couponData.start_time || !couponData.end_time) {
+      res.status(400).json({ code: 400, message: 'Missing required fields', data: null })
+      return
+    }
+
+    const id = couponService.createCoupon({
+      name: couponData.name,
+      type: couponData.type || 'cash',
+      value: couponData.value,
+      min_amount: couponData.min_amount || 0,
+      max_discount: couponData.max_discount || null,
+      total_count: couponData.total_count || 0,
+      remain_count: couponData.remain_count || couponData.total_count || 0,
+      per_user_limit: couponData.per_user_limit || 1,
+      start_time: couponData.start_time,
+      end_time: couponData.end_time,
+      status: couponData.status || 'draft',
+      description: couponData.description || '',
+    })
+
+    res.json({ code: 200, message: 'Coupon created successfully', data: { id } })
+  } catch (error) {
+    console.error('Error creating coupon:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.put('/api/coupons/:id', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id)
+    const updates = req.body
+    const success = couponService.updateCoupon(id, updates)
+
+    if (!success) {
+      res.status(404).json({ code: 404, message: 'Coupon not found or no changes made', data: null })
+      return
+    }
+
+    res.json({ code: 200, message: 'Coupon updated successfully', data: null })
+  } catch (error) {
+    console.error('Error updating coupon:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.delete('/api/coupons/:id', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id)
+    const success = couponService.deleteCoupon(id)
+
+    if (!success) {
+      res.status(404).json({ code: 404, message: 'Coupon not found', data: null })
+      return
+    }
+
+    res.json({ code: 200, message: 'Coupon deleted successfully', data: null })
+  } catch (error) {
+    console.error('Error deleting coupon:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.delete('/api/coupons', async (req: Request, res: Response) => {
+  try {
+    const { ids } = req.body
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ code: 400, message: 'Invalid ids array', data: null })
+      return
+    }
+
+    const deletedCount = couponService.deleteCoupons(ids)
+    res.json({ code: 200, message: `${deletedCount} coupon(s) deleted successfully`, data: null })
+  } catch (error) {
+    console.error('Error deleting coupons:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
+  console.error('Error handler:', error)
+  res.status(500).json({
+    success: false,
+    error: 'Server internal error',
+  })
+})
+
+app.use((req: Request, res: Response) => {
+  res.status(404).json({
+    success: false,
+    error: 'API not found',
+  })
+})
+
+export default app
