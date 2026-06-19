@@ -73,7 +73,7 @@ const handleSubmit = async () => {
         }
 
         if (success) {
-          router.push('/coupons');
+          router.push('/settings/coupons');
         }
       }
     });

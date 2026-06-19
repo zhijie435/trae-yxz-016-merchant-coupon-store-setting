@@ -13,6 +13,7 @@ import dotenv from 'dotenv'
 import { fileURLToPath } from 'url'
 import { initializeDatabase } from './database/index.js'
 import couponService from './services/couponService.js'
+import bannerService from './services/bannerService.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -151,6 +152,128 @@ app.delete('/api/coupons', async (req: Request, res: Response) => {
     res.json({ code: 200, message: `${deletedCount} coupon(s) deleted successfully`, data: null })
   } catch (error) {
     console.error('Error deleting coupons:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+// Banner APIs
+app.get('/api/banners', async (req: Request, res: Response) => {
+  try {
+    const store_id = parseInt(req.query.store_id as string) || 1
+    const status = req.query.status as string || ''
+
+    const result = bannerService.getBannerList({ store_id, status })
+
+    res.json({
+      code: 200,
+      message: 'success',
+      data: result,
+    })
+  } catch (error) {
+    console.error('Error getting banner list:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.get('/api/banners/:id', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id)
+    const banner = bannerService.getBannerById(id)
+
+    if (!banner) {
+      res.status(404).json({ code: 404, message: 'Banner not found', data: null })
+      return
+    }
+
+    res.json({ code: 200, message: 'success', data: banner })
+  } catch (error) {
+    console.error('Error getting banner:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.post('/api/banners', async (req: Request, res: Response) => {
+  try {
+    const bannerData = req.body
+
+    if (!bannerData.title || !bannerData.image_url) {
+      res.status(400).json({ code: 400, message: 'Title and image are required', data: null })
+      return
+    }
+
+    const id = bannerService.createBanner({
+      store_id: bannerData.store_id || 1,
+      title: bannerData.title,
+      image_url: bannerData.image_url,
+      link_url: bannerData.link_url,
+      link_type: bannerData.link_type || 'none',
+      sort_order: bannerData.sort_order || 0,
+      status: bannerData.status || 'active',
+      start_time: bannerData.start_time,
+      end_time: bannerData.end_time,
+    })
+
+    res.json({ code: 200, message: 'Banner created successfully', data: { id } })
+  } catch (error) {
+    console.error('Error creating banner:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.put('/api/banners/:id', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id)
+    const updates = req.body
+    const success = bannerService.updateBanner(id, updates)
+
+    if (!success) {
+      res.status(404).json({ code: 404, message: 'Banner not found or no changes made', data: null })
+      return
+    }
+
+    res.json({ code: 200, message: 'Banner updated successfully', data: null })
+  } catch (error) {
+    console.error('Error updating banner:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.delete('/api/banners/:id', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id)
+    const success = bannerService.deleteBanner(id)
+
+    if (!success) {
+      res.status(404).json({ code: 404, message: 'Banner not found', data: null })
+      return
+    }
+
+    res.json({ code: 200, message: 'Banner deleted successfully', data: null })
+  } catch (error) {
+    console.error('Error deleting banner:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.post('/api/banners/sort', async (req: Request, res: Response) => {
+  try {
+    const { updates } = req.body
+
+    if (!Array.isArray(updates)) {
+      res.status(400).json({ code: 400, message: 'Invalid updates array', data: null })
+      return
+    }
+
+    const success = bannerService.updateSortOrders(updates)
+
+    if (!success) {
+      res.status(500).json({ code: 500, message: 'Failed to update sort orders', data: null })
+      return
+    }
+
+    res.json({ code: 200, message: 'Sort orders updated successfully', data: null })
+  } catch (error) {
+    console.error('Error updating sort orders:', error)
     res.status(500).json({ code: 500, message: 'Internal server error', data: null })
   }
 })

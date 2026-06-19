@@ -73,11 +73,11 @@ const handleSelectionChange = (selection: Coupon[]) => {
 };
 
 const handleCreate = () => {
-  router.push('/coupons/new');
+  router.push('/settings/coupons/new');
 };
 
 const handleEdit = (id: number) => {
-  router.push(`/coupons/${id}/edit`);
+  router.push(`/settings/coupons/${id}/edit`);
 };
 
 const handleDelete = async (id: number) => {
