@@ -21,9 +21,13 @@ export interface Banner {
   link_url?: string;
   link_type?: 'none' | 'url' | 'page' | 'product';
   sort_order?: number;
-  status?: 'active' | 'inactive';
+  status?: 'pending' | 'active' | 'inactive' | 'rejected';
+  city_scope?: string;
   start_time?: string;
   end_time?: string;
+  review_comment?: string;
+  review_time?: string;
+  reviewer_id?: number;
   create_time?: string;
   update_time?: string;
 }
@@ -81,6 +85,18 @@ export const bannerApi = {
 
   updateSortOrders: (updates: { id: number; sort_order: number }[]) => {
     return api.post<any, any>('/banners/sort', { updates });
+  },
+
+  approveBanner: (id: number, data?: { comment?: string; reviewer_id?: number }) => {
+    return api.post<any, any>(`/banners/${id}/approve`, data || {});
+  },
+
+  rejectBanner: (id: number, data?: { comment?: string; reviewer_id?: number }) => {
+    return api.post<any, any>(`/banners/${id}/reject`, data || {});
+  },
+
+  getPendingBanners: () => {
+    return api.get<any, { code: number; message: string; data: Banner[] }>('/banners/status/pending');
   },
 };
 

@@ -25,8 +25,22 @@ const form = ref({
   link_url: '',
   link_type: 'none' as 'none' | 'url' | 'page' | 'product',
   sort_order: 0,
-  status: 'active' as 'active' | 'inactive',
+  status: 'pending' as 'pending' | 'active' | 'inactive' | 'rejected',
+  city_scope: 'all',
 });
+
+const cities = [
+  { value: 'all', label: 'All Cities' },
+  { value: 'beijing', label: 'Beijing' },
+  { value: 'shanghai', label: 'Shanghai' },
+  { value: 'guangzhou', label: 'Guangzhou' },
+  { value: 'shenzhen', label: 'Shenzhen' },
+  { value: 'hangzhou', label: 'Hangzhou' },
+  { value: 'chengdu', label: 'Chengdu' },
+  { value: 'wuhan', label: 'Wuhan' },
+  { value: 'xian', label: "Xi'an" },
+  { value: 'chongqing', label: 'Chongqing' },
+];
 
 const rules: FormRules = {
   title: [
@@ -53,7 +67,8 @@ watch(
         link_url: props.banner.link_url || '',
         link_type: props.banner.link_type || 'none',
         sort_order: props.banner.sort_order || 0,
-        status: props.banner.status || 'active',
+        status: props.banner.status || 'pending',
+        city_scope: props.banner.city_scope || 'all',
       };
     } else if (newVal) {
       form.value = {
@@ -62,7 +77,8 @@ watch(
         link_url: '',
         link_type: 'none',
         sort_order: 0,
-        status: 'active',
+        status: 'pending',
+        city_scope: 'all',
       };
     }
   }
@@ -77,7 +93,11 @@ const handleSubmit = async () => {
         let success: boolean | number | null = false;
 
         if (props.banner?.id) {
-          success = await bannerStore.updateBanner(props.banner.id, form.value);
+          const submitData = { ...form.value };
+          if (submitData.status === 'active') {
+            submitData.status = 'pending';
+          }
+          success = await bannerStore.updateBanner(props.banner.id, submitData);
         } else {
           success = await bannerStore.createBanner(form.value);
         }
@@ -207,16 +227,23 @@ const useSampleImage = (url: string) => {
         </el-radio-group>
       </el-form-item>
 
-      <el-form-item
-        label="Link URL"
-        prop="link_url"
-        v-if="form.link_type !== 'none'"
-      >
+      <el-form-item label="Link URL" prop="link_url" v-if="form.link_type !== 'none'">
         <el-input
           v-model="form.link_url"
           placeholder="Enter link URL"
           :disabled="form.link_type === 'none'"
         />
+      </el-form-item>
+
+      <el-form-item label="City Scope" prop="city_scope">
+        <el-select v-model="form.city_scope" placeholder="Select city scope" style="width: 100%">
+          <el-option
+            v-for="city in cities"
+            :key="city.value"
+            :label="city.label"
+            :value="city.value"
+          />
+        </el-select>
       </el-form-item>
 
       <el-form-item label="Sort Order" prop="sort_order">
@@ -228,11 +255,13 @@ const useSampleImage = (url: string) => {
         />
       </el-form-item>
 
-      <el-form-item label="Status" prop="status">
-        <el-radio-group v-model="form.status">
-          <el-radio label="active">Active</el-radio>
-          <el-radio label="inactive">Inactive</el-radio>
-        </el-radio-group>
+      <el-form-item v-if="props.banner?.id">
+        <el-alert
+          title="Note: This banner will need to be reviewed again after editing"
+          type="warning"
+          :closable="false"
+          style="margin-bottom: 20px"
+        />
       </el-form-item>
     </el-form>
 

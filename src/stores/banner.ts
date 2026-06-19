@@ -125,6 +125,46 @@ export const useBannerStore = defineStore('banner', () => {
     }
   };
 
+  const approveBanner = async (id: number, comment?: string) => {
+    loading.value = true;
+    try {
+      const response = await bannerApi.approveBanner(id, { comment });
+      if (response.code === 200) {
+        ElMessage.success('Banner approved successfully');
+        return true;
+      } else {
+        ElMessage.error(response.message || 'Failed to approve banner');
+        return false;
+      }
+    } catch (error) {
+      ElMessage.error('Failed to approve banner');
+      console.error(error);
+      return false;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const rejectBanner = async (id: number, comment?: string) => {
+    loading.value = true;
+    try {
+      const response = await bannerApi.rejectBanner(id, { comment });
+      if (response.code === 200) {
+        ElMessage.success('Banner rejected');
+        return true;
+      } else {
+        ElMessage.error(response.message || 'Failed to reject banner');
+        return false;
+      }
+    } catch (error) {
+      ElMessage.error('Failed to reject banner');
+      console.error(error);
+      return false;
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     banners,
     currentBanner,
@@ -135,5 +175,7 @@ export const useBannerStore = defineStore('banner', () => {
     updateBanner,
     deleteBanner,
     updateSortOrders,
+    approveBanner,
+    rejectBanner,
   };
 });

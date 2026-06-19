@@ -8,11 +8,20 @@ export interface Banner {
   link_url?: string;
   link_type?: 'none' | 'url' | 'page' | 'product';
   sort_order?: number;
-  status?: 'active' | 'inactive';
+  status?: 'pending' | 'active' | 'inactive' | 'rejected';
+  city_scope?: string;
   start_time?: string;
   end_time?: string;
+  review_comment?: string;
+  review_time?: string;
+  reviewer_id?: number;
   create_time?: string;
   update_time?: string;
+}
+
+export interface ReviewParams {
+  comment?: string;
+  reviewer_id?: number;
 }
 
 export interface BannerListParams {
@@ -68,8 +77,8 @@ export class BannerService {
   createBanner(banner: Omit<Banner, 'id' | 'create_time' | 'update_time'>): number {
     const stmt = db.prepare(`
       INSERT INTO banners (
-        store_id, title, image_url, link_url, link_type, sort_order, status, start_time, end_time
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        store_id, title, image_url, link_url, link_type, sort_order, status, city_scope, start_time, end_time
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
@@ -79,7 +88,8 @@ export class BannerService {
       banner.link_url || null,
       banner.link_type || 'none',
       banner.sort_order || 0,
-      banner.status || 'active',
+      'pending',
+      banner.city_scope || 'all',
       banner.start_time || null,
       banner.end_time || null
     );
@@ -89,7 +99,7 @@ export class BannerService {
 
   updateBanner(id: number, updates: Partial<Banner>): boolean {
     const allowedFields = [
-      'title', 'image_url', 'link_url', 'link_type', 'sort_order', 'status', 'start_time', 'end_time'
+      'title', 'image_url', 'link_url', 'link_type', 'sort_order', 'status', 'start_time', 'end_time', 'city_scope'
     ];
 
     const updateFields: string[] = [];
@@ -146,6 +156,41 @@ export class BannerService {
       console.error('Error updating sort orders:', error);
       return false;
     }
+  }
+
+  approveBanner(id: number, params: ReviewParams): boolean {
+    const stmt = db.prepare(`
+      UPDATE banners 
+      SET status = 'active', 
+          review_comment = ?, 
+          review_time = CURRENT_TIMESTAMP, 
+          reviewer_id = ?,
+          update_time = CURRENT_TIMESTAMP
+      WHERE id = ? AND status = 'pending'
+    `);
+    
+    const result = stmt.run(params.comment || '', params.reviewer_id || null, id);
+    return result.changes > 0;
+  }
+
+  rejectBanner(id: number, params: ReviewParams): boolean {
+    const stmt = db.prepare(`
+      UPDATE banners 
+      SET status = 'rejected', 
+          review_comment = ?, 
+          review_time = CURRENT_TIMESTAMP, 
+          reviewer_id = ?,
+          update_time = CURRENT_TIMESTAMP
+      WHERE id = ? AND status = 'pending'
+    `);
+    
+    const result = stmt.run(params.comment || '', params.reviewer_id || null, id);
+    return result.changes > 0;
+  }
+
+  getPendingBanners(): Banner[] {
+    const stmt = db.prepare('SELECT * FROM banners WHERE status = ? ORDER BY create_time DESC');
+    return stmt.all('pending') as Banner[];
   }
 }
 

@@ -85,9 +85,13 @@ export function initializeDatabase() {
       link_url VARCHAR(500) DEFAULT NULL,
       link_type VARCHAR(20) DEFAULT 'none',
       sort_order INTEGER DEFAULT 0,
-      status VARCHAR(20) NOT NULL DEFAULT 'active',
+      status VARCHAR(20) NOT NULL DEFAULT 'pending',
+      city_scope VARCHAR(500) DEFAULT 'all',
       start_time DATETIME DEFAULT NULL,
       end_time DATETIME DEFAULT NULL,
+      review_comment VARCHAR(500) DEFAULT NULL,
+      review_time DATETIME DEFAULT NULL,
+      reviewer_id INTEGER DEFAULT NULL,
       create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
       update_time DATETIME DEFAULT CURRENT_TIMESTAMP
     )
@@ -95,6 +99,43 @@ export function initializeDatabase() {
 
   db.exec('CREATE INDEX IF NOT EXISTS idx_banners_store_id ON banners(store_id)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_banners_status ON banners(status)');
+
+  const bannerColumns = db.prepare('PRAGMA table_info(banners)').all() as any[];
+  if (!bannerColumns.some(col => col.name === 'city_scope')) {
+    try {
+      db.exec('ALTER TABLE banners ADD COLUMN city_scope VARCHAR(500) DEFAULT \'all\'');
+      console.log('Added city_scope column to banners table');
+    } catch (error) {
+      console.error('Error adding city_scope column:', error);
+    }
+  }
+
+  if (!bannerColumns.some(col => col.name === 'review_comment')) {
+    try {
+      db.exec('ALTER TABLE banners ADD COLUMN review_comment VARCHAR(500) DEFAULT NULL');
+      console.log('Added review_comment column to banners table');
+    } catch (error) {
+      console.error('Error adding review_comment column:', error);
+    }
+  }
+
+  if (!bannerColumns.some(col => col.name === 'review_time')) {
+    try {
+      db.exec('ALTER TABLE banners ADD COLUMN review_time DATETIME DEFAULT NULL');
+      console.log('Added review_time column to banners table');
+    } catch (error) {
+      console.error('Error adding review_time column:', error);
+    }
+  }
+
+  if (!bannerColumns.some(col => col.name === 'reviewer_id')) {
+    try {
+      db.exec('ALTER TABLE banners ADD COLUMN reviewer_id INTEGER DEFAULT NULL');
+      console.log('Added reviewer_id column to banners table');
+    } catch (error) {
+      console.error('Error adding reviewer_id column:', error);
+    }
+  }
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS announcements (

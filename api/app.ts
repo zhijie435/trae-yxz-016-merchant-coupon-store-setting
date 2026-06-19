@@ -255,7 +255,8 @@ app.post('/api/banners', async (req: Request, res: Response) => {
       link_url: bannerData.link_url,
       link_type: bannerData.link_type || 'none',
       sort_order: bannerData.sort_order || 0,
-      status: bannerData.status || 'active',
+      status: 'pending',
+      city_scope: bannerData.city_scope || 'all',
       start_time: bannerData.start_time,
       end_time: bannerData.end_time,
     })
@@ -298,6 +299,52 @@ app.delete('/api/banners/:id', async (req: Request, res: Response) => {
     res.json({ code: 200, message: 'Banner deleted successfully', data: null })
   } catch (error) {
     console.error('Error deleting banner:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.post('/api/banners/:id/approve', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id)
+    const { comment, reviewer_id } = req.body
+    const success = bannerService.approveBanner(id, { comment, reviewer_id })
+
+    if (!success) {
+      res.status(404).json({ code: 404, message: 'Banner not found or not in pending status', data: null })
+      return
+    }
+
+    res.json({ code: 200, message: 'Banner approved successfully', data: null })
+  } catch (error) {
+    console.error('Error approving banner:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.post('/api/banners/:id/reject', async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id)
+    const { comment, reviewer_id } = req.body
+    const success = bannerService.rejectBanner(id, { comment, reviewer_id })
+
+    if (!success) {
+      res.status(404).json({ code: 404, message: 'Banner not found or not in pending status', data: null })
+      return
+    }
+
+    res.json({ code: 200, message: 'Banner rejected', data: null })
+  } catch (error) {
+    console.error('Error rejecting banner:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
+app.get('/api/banners/status/pending', async (req: Request, res: Response) => {
+  try {
+    const banners = bannerService.getPendingBanners()
+    res.json({ code: 200, message: 'success', data: banners })
+  } catch (error) {
+    console.error('Error getting pending banners:', error)
     res.status(500).json({ code: 500, message: 'Internal server error', data: null })
   }
 })

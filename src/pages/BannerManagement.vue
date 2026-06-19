@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useBannerStore } from '../stores/banner';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Upload, Delete, Edit, Picture, Top, Bottom } from '@element-plus/icons-vue';
+import { Plus, Upload, Delete, Edit, Picture, Top, Bottom, Check, Close } from '@element-plus/icons-vue';
 import type { Banner } from '../api/banner';
 import BannerFormDialog from './BannerFormDialog.vue';
 
@@ -82,6 +82,83 @@ const handlePreview = (url: string) => {
   previewUrl.value = url;
 };
 
+const handleApprove = async (id: number) => {
+  try {
+    const { value: comment } = await ElMessageBox.prompt(
+      'Please enter approval comment (optional)',
+      'Approve Banner',
+      {
+        confirmButtonText: 'Approve',
+        cancelButtonText: 'Cancel',
+        inputPlaceholder: 'Enter comment (optional)',
+      }
+    );
+
+    const success = await bannerStore.approveBanner(id, comment);
+    if (success) {
+      bannerStore.fetchBanners();
+    }
+  } catch (error) {
+    // User cancelled
+  }
+};
+
+const handleReject = async (id: number) => {
+  try {
+    const { value: comment } = await ElMessageBox.prompt(
+      'Please enter rejection reason (optional)',
+      'Reject Banner',
+      {
+        confirmButtonText: 'Reject',
+        cancelButtonText: 'Cancel',
+        inputPlaceholder: 'Enter reason (optional)',
+      }
+    );
+
+    const success = await bannerStore.rejectBanner(id, comment);
+    if (success) {
+      bannerStore.fetchBanners();
+    }
+  } catch (error) {
+    // User cancelled
+  }
+};
+
+const getStatusType = (status: string) => {
+  const statusMap: Record<string, string> = {
+    pending: 'warning',
+    active: 'success',
+    inactive: 'info',
+    rejected: 'danger',
+  };
+  return statusMap[status] || 'info';
+};
+
+const getStatusLabel = (status: string) => {
+  const labelMap: Record<string, string> = {
+    pending: 'Pending Review',
+    active: 'Active',
+    inactive: 'Inactive',
+    rejected: 'Rejected',
+  };
+  return labelMap[status] || status;
+};
+
+const formatCityScope = (cityScope: string) => {
+  if (!cityScope || cityScope === 'all') {
+    return 'All Cities';
+  }
+  try {
+    const cities = JSON.parse(cityScope);
+    if (Array.isArray(cities)) {
+      return cities.join(', ');
+    }
+    return cityScope;
+  } catch {
+    return cityScope;
+  }
+};
+
 onMounted(() => {
   bannerStore.fetchBanners();
 });
@@ -132,10 +209,10 @@ onMounted(() => {
             />
           </div>
           <el-tag
-            :type="banner.status === 'active' ? 'success' : 'info'"
+            :type="getStatusType(banner.status!)"
             class="status-tag"
           >
-            {{ banner.status === 'active' ? 'Active' : 'Inactive' }}
+            {{ getStatusLabel(banner.status!) }}
           </el-tag>
         </div>
 
@@ -144,7 +221,28 @@ onMounted(() => {
           <p v-if="banner.link_url" class="link-info">
             Link: {{ banner.link_url }}
           </p>
+          <p v-if="banner.city_scope" class="city-scope">
+            Cities: {{ formatCityScope(banner.city_scope) }}
+          </p>
           <div class="banner-actions">
+            <el-button
+              v-if="banner.status === 'pending'"
+              link
+              type="success"
+              :icon="Check"
+              @click="handleApprove(banner.id!)"
+            >
+              Approve
+            </el-button>
+            <el-button
+              v-if="banner.status === 'pending'"
+              link
+              type="danger"
+              :icon="Close"
+              @click="handleReject(banner.id!)"
+            >
+              Reject
+            </el-button>
             <el-button
               link
               type="primary"
@@ -265,6 +363,15 @@ onMounted(() => {
   margin: 0 0 12px 0;
   font-size: 12px;
   color: #909399;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.city-scope {
+  margin: 0 0 12px 0;
+  font-size: 12px;
+  color: #67C23A;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
