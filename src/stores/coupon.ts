@@ -36,6 +36,24 @@ export const useCouponStore = defineStore('coupon', () => {
     }
   };
 
+  const fetchActiveCoupons = async () => {
+    loading.value = true;
+    try {
+      const response = await couponApi.getActiveCoupons();
+      if (response.code === 200) {
+        coupons.value = response.data;
+        pagination.value.total = response.data.length;
+      } else {
+        ElMessage.error(response.message || 'Failed to fetch active coupons');
+      }
+    } catch (error) {
+      ElMessage.error('Failed to fetch active coupons');
+      console.error(error);
+    } finally {
+      loading.value = false;
+    }
+  };
+
   const fetchCouponById = async (id: number) => {
     loading.value = true;
     try {
@@ -182,6 +200,7 @@ export const useCouponStore = defineStore('coupon', () => {
     loading,
     pagination,
     fetchCoupons,
+    fetchActiveCoupons,
     fetchCouponById,
     createCoupon,
     updateCoupon,

@@ -71,6 +71,10 @@ export const couponApi = {
     return api.get<any, CouponListResponse>('/coupons', { params });
   },
 
+  getActiveCoupons: () => {
+    return api.get<any, { code: number; message: string; data: Coupon[] }>('/coupons/active');
+  },
+
   getCouponById: (id: number) => {
     return api.get<any, CouponResponse>(`/coupons/${id}`);
   },

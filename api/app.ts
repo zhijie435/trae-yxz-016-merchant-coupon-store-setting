@@ -57,6 +57,16 @@ app.get('/api/coupons', async (req: Request, res: Response) => {
   }
 })
 
+app.get('/api/coupons/active', async (req: Request, res: Response) => {
+  try {
+    const coupons = couponService.getActiveCoupons()
+    res.json({ code: 200, message: 'success', data: coupons })
+  } catch (error) {
+    console.error('Error getting active coupons:', error)
+    res.status(500).json({ code: 500, message: 'Internal server error', data: null })
+  }
+})
+
 app.get('/api/coupons/:id', async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id)

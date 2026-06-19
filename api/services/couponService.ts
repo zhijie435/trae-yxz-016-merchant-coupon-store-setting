@@ -188,6 +188,18 @@ export class CouponService {
     const stmt = db.prepare('SELECT * FROM coupons WHERE status = ? ORDER BY create_time DESC');
     return stmt.all('pending') as Coupon[];
   }
+
+  getActiveCoupons(): Coupon[] {
+    const now = new Date().toISOString();
+    const stmt = db.prepare(`
+      SELECT * FROM coupons
+      WHERE status = 'active'
+        AND start_time <= ?
+        AND end_time >= ?
+      ORDER BY create_time DESC
+    `);
+    return stmt.all(now, now) as Coupon[];
+  }
 }
 
 export default new CouponService();
