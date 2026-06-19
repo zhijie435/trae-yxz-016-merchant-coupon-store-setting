@@ -13,6 +13,7 @@ const bannerStore = useBannerStore();
 const showFormDialog = ref(false);
 const editingBanner = ref<Banner | null>(null);
 const previewUrl = ref('');
+const loading = ref(false);
 
 const handleCreate = () => {
   editingBanner.value = null;
@@ -26,14 +27,15 @@ const handleEdit = (banner: Banner) => {
 
 const handleDelete = async (id: number) => {
   try {
-    await ElMessageBox.confirm('Are you sure you want to delete this banner?', 'Confirm', {
-      confirmButtonText: 'Delete',
-      cancelButtonText: 'Cancel',
+    await ElMessageBox.confirm('确定要删除此轮播图吗？此操作不可撤销。', '确认删除', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
       type: 'warning',
     });
 
     const success = await bannerStore.deleteBanner(id);
     if (success) {
+      ElMessage.success('删除成功');
       bannerStore.fetchBanners();
     }
   } catch (error) {
@@ -43,6 +45,7 @@ const handleDelete = async (id: number) => {
 
 const handleFormSuccess = () => {
   showFormDialog.value = false;
+  ElMessage.success(editingBanner.value ? '修改成功' : '创建成功');
   bannerStore.fetchBanners();
 };
 
@@ -59,6 +62,7 @@ const handleMoveTop = async (index: number) => {
   }));
 
   await bannerStore.updateSortOrders(sortUpdates);
+  ElMessage.success('排序已更新');
   bannerStore.fetchBanners();
 };
 
@@ -75,6 +79,7 @@ const handleMoveBottom = async (index: number) => {
   }));
 
   await bannerStore.updateSortOrders(sortUpdates);
+  ElMessage.success('排序已更新');
   bannerStore.fetchBanners();
 };
 
@@ -85,17 +90,18 @@ const handlePreview = (url: string) => {
 const handleApprove = async (id: number) => {
   try {
     const { value: comment } = await ElMessageBox.prompt(
-      'Please enter approval comment (optional)',
-      'Approve Banner',
+      '请输入审核通过备注（可选）',
+      '审核通过',
       {
-        confirmButtonText: 'Approve',
-        cancelButtonText: 'Cancel',
-        inputPlaceholder: 'Enter comment (optional)',
+        confirmButtonText: '通过',
+        cancelButtonText: '取消',
+        inputPlaceholder: '请输入备注信息',
       }
     );
 
     const success = await bannerStore.approveBanner(id, comment);
     if (success) {
+      ElMessage.success('审核通过成功');
       bannerStore.fetchBanners();
     }
   } catch (error) {
@@ -106,17 +112,18 @@ const handleApprove = async (id: number) => {
 const handleReject = async (id: number) => {
   try {
     const { value: comment } = await ElMessageBox.prompt(
-      'Please enter rejection reason (optional)',
-      'Reject Banner',
+      '请输入拒绝原因（可选）',
+      '拒绝审核',
       {
-        confirmButtonText: 'Reject',
-        cancelButtonText: 'Cancel',
-        inputPlaceholder: 'Enter reason (optional)',
+        confirmButtonText: '拒绝',
+        cancelButtonText: '取消',
+        inputPlaceholder: '请输入拒绝原因',
       }
     );
 
     const success = await bannerStore.rejectBanner(id, comment);
     if (success) {
+      ElMessage.success('已拒绝');
       bannerStore.fetchBanners();
     }
   } catch (error) {
@@ -136,17 +143,17 @@ const getStatusType = (status: string) => {
 
 const getStatusLabel = (status: string) => {
   const labelMap: Record<string, string> = {
-    pending: 'Pending Review',
-    active: 'Active',
-    inactive: 'Inactive',
-    rejected: 'Rejected',
+    pending: '待审核',
+    active: '已上线',
+    inactive: '已下线',
+    rejected: '已拒绝',
   };
   return labelMap[status] || status;
 };
 
 const formatCityScope = (cityScope: string) => {
   if (!cityScope || cityScope === 'all') {
-    return 'All Cities';
+    return '全国';
   }
   try {
     const cities = JSON.parse(cityScope);
@@ -159,6 +166,22 @@ const formatCityScope = (cityScope: string) => {
   }
 };
 
+const formatTimeRange = (startTime?: string, endTime?: string) => {
+  if (!startTime && !endTime) return '永久有效';
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '不限';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+  };
+
+  return `${formatDate(startTime)} - ${formatDate(endTime)}`;
+};
+
 onMounted(() => {
   bannerStore.fetchBanners();
 });
@@ -167,16 +190,16 @@ onMounted(() => {
 <template>
   <div class="banner-management">
     <div class="header">
-      <h2>Banner Management</h2>
+      <h2>轮播图管理</h2>
       <el-button type="primary" :icon="Plus" @click="handleCreate">
-        Add Banner
+        添加轮播图
       </el-button>
     </div>
 
     <div class="banner-grid" v-loading="bannerStore.loading">
       <div v-if="bannerStore.banners.length === 0" class="empty-state">
         <el-icon :size="64"><Picture /></el-icon>
-        <p>No banners yet. Click "Add Banner" to create one.</p>
+        <p>暂无轮播图，点击"添加轮播图"创建一个</p>
       </div>
 
       <div
@@ -199,6 +222,7 @@ onMounted(() => {
               size="small"
               @click="handleMoveTop(index)"
               :disabled="index === 0"
+              title="置顶"
             />
             <el-button
               :icon="Bottom"
@@ -206,6 +230,7 @@ onMounted(() => {
               size="small"
               @click="handleMoveBottom(index)"
               :disabled="index === bannerStore.banners.length - 1"
+              title="置底"
             />
           </div>
           <el-tag
@@ -214,15 +239,21 @@ onMounted(() => {
           >
             {{ getStatusLabel(banner.status!) }}
           </el-tag>
+          <div class="sort-order">
+            {{ index + 1 }}
+          </div>
         </div>
 
         <div class="banner-info">
           <h3>{{ banner.title }}</h3>
           <p v-if="banner.link_url" class="link-info">
-            Link: {{ banner.link_url }}
+            链接: {{ banner.link_url }}
           </p>
           <p v-if="banner.city_scope" class="city-scope">
-            Cities: {{ formatCityScope(banner.city_scope) }}
+            范围: {{ formatCityScope(banner.city_scope) }}
+          </p>
+          <p class="time-range">
+            {{ formatTimeRange(banner.start_time, banner.end_time) }}
           </p>
           <div class="banner-actions">
             <el-button
@@ -232,7 +263,7 @@ onMounted(() => {
               :icon="Check"
               @click="handleApprove(banner.id!)"
             >
-              Approve
+              通过
             </el-button>
             <el-button
               v-if="banner.status === 'pending'"
@@ -241,7 +272,7 @@ onMounted(() => {
               :icon="Close"
               @click="handleReject(banner.id!)"
             >
-              Reject
+              拒绝
             </el-button>
             <el-button
               link
@@ -249,7 +280,7 @@ onMounted(() => {
               :icon="Edit"
               @click="handleEdit(banner)"
             >
-              Edit
+              编辑
             </el-button>
             <el-button
               link
@@ -257,7 +288,7 @@ onMounted(() => {
               :icon="Delete"
               @click="handleDelete(banner.id!)"
             >
-              Delete
+              删除
             </el-button>
           </div>
         </div>
@@ -348,6 +379,18 @@ onMounted(() => {
   right: 8px;
 }
 
+.sort-order {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .banner-info {
   padding: 16px;
 }
@@ -377,8 +420,15 @@ onMounted(() => {
   white-space: nowrap;
 }
 
+.time-range {
+  margin: 0 0 12px 0;
+  font-size: 12px;
+  color: #409EFF;
+}
+
 .banner-actions {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
 }
 </style>
